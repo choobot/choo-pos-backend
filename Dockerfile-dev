@@ -1,0 +1,10 @@
+FROM golang:1.14
+
+ENV SRC_DIR /go/src/github.com/choobot/choo-pos-backend/app/
+WORKDIR ${SRC_DIR}
+COPY app/ ${SRC_DIR}
+RUN go get -d -v ./...
+RUN go get github.com/canthefason/go-watcher
+RUN go install github.com/canthefason/go-watcher/cmd/watcher
+
+CMD ["/bin/sh","-c","watcher"]

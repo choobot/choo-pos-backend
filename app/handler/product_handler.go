@@ -42,7 +42,10 @@ func (this *MySqlProductHandler) SetTimeZone() error {
 
 func (this *MySqlProductHandler) CreateTablesIfNotExist() error {
 	sql := "SELECT 1 FROM product LIMIT 1"
-	_, err := this.db.Query(sql)
+	rows, err := this.db.Query(sql)
+	if rows != nil {
+		defer rows.Close()
+	}
 	if err != nil {
 		sql = `
 		CREATE TABLE product (
@@ -52,7 +55,7 @@ func (this *MySqlProductHandler) CreateTablesIfNotExist() error {
 			cover VARCHAR(255) NOT NULL,
 			status INT NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+			updated_at TIMESTAMP NOT NULL
 		) CHARACTER SET utf8 COLLATE utf8_general_ci`
 
 		if _, err = this.db.Exec(sql); err != nil {
@@ -82,10 +85,11 @@ func (this *MySqlProductHandler) CreateTablesIfNotExist() error {
 
 func (this *MySqlProductHandler) Create(product model.Product) error {
 	this.SetTimeZone()
+
 	if err := this.CreateTablesIfNotExist(); err != nil {
 		return err
 	}
-	sql := `INSERT INTO product (id, title, price, cover, status) VALUES(?, ?, ?, ?, 1)`
+	sql := `INSERT INTO product (id, title, price, cover, status, updated_at) VALUES(?, ?, ?, ?, 1, CURRENT_TIMESTAMP)`
 	result, err := this.db.Exec(sql, product.Id, product.Title, product.Price, product.Cover)
 	if err != nil {
 		return err
@@ -108,10 +112,10 @@ func (this *MySqlProductHandler) GetAll() ([]model.Product, error) {
 	}
 	var products []model.Product
 	rows, err := this.db.Query("SELECT id, title, price, cover, status, CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), CONVERT_TZ(updated_at,'GMT','Asia/Bangkok') FROM product ORDER BY title")
+	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var id string
@@ -151,10 +155,10 @@ func (this *MySqlProductHandler) GetByIds(ids []interface{}) (map[string]model.P
 	sql := "SELECT id, title, price, cover, status, CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), CONVERT_TZ(updated_at,'GMT','Asia/Bangkok') FROM product WHERE id IN (?" + strings.Repeat(",?", len(ids)-1) + ")"
 
 	rows, err := this.db.Query(sql, ids...)
+	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var id string

@@ -38,7 +38,10 @@ func (this *MySqlUserHandler) SetTimeZone() error {
 
 func (this *MySqlUserHandler) CreateTablesIfNotExist() error {
 	sql := "SELECT 1 FROM user_log LIMIT 1"
-	_, err := this.db.Query(sql)
+	rows, err := this.db.Query(sql)
+	if rows != nil {
+		defer rows.Close()
+	}
 	if err != nil {
 		sql = `
 		CREATE TABLE user_log (
@@ -85,10 +88,10 @@ func (this *MySqlUserHandler) GetAllLog() ([]model.UserLog, error) {
 	}
 	var userLogs []model.UserLog
 	rows, err := this.db.Query("SELECT CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), user_id, name, picture FROM user_log ORDER BY created_at DESC")
+	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var userId string

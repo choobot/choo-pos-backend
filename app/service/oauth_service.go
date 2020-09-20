@@ -16,7 +16,7 @@ import (
 )
 
 type OAuthService interface {
-	GenerateOAuthState() string
+	GenerateOAuthState(callback string) string
 	OAuthConfig() *oauth2.Config
 	Signout(oauthToken string) error
 }
@@ -25,7 +25,8 @@ type LineOAuthService struct {
 	oAuthConfig *oauth2.Config
 }
 
-func (this *LineOAuthService) GenerateOAuthState() string {
+func (this *LineOAuthService) GenerateOAuthState(callback string) string {
+	this.oAuthConfig.RedirectURL = callback
 	salt := "choo-pos"
 	data := []byte(strconv.Itoa(int(time.Now().Unix())) + salt)
 	return fmt.Sprintf("%x", sha1.Sum(data))
@@ -60,7 +61,6 @@ func NewLineOAuthService() LineOAuthService {
 		ClientID:     os.Getenv("LINE_LOGIN_ID"),
 		ClientSecret: os.Getenv("LINE_LOGIN_SECRET"),
 		Scopes:       []string{"openid", "profile"},
-		RedirectURL:  os.Getenv("LINE_LOGIN_REDIRECT_URL"),
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://access.line.me/oauth2/v2.1/authorize",
 			TokenURL: "https://api.line.me/oauth2/v2.1/token",

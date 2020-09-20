@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/choobot/choo-pos-backend/app/controller"
+	"github.com/choobot/choo-pos-backend/app/handler"
 	"github.com/choobot/choo-pos-backend/app/service"
 
 	"github.com/gorilla/sessions"
@@ -15,10 +16,12 @@ import (
 func main() {
 	oAuthSerivce := service.NewLineOAuthService()
 	jwtService := service.NewLineJwtService()
-	webController := controller.WebController{
+	productHandler := handler.NewProductMySqlHandler()
+	controller := controller.ApiController{
 		OAuthService:   &oAuthSerivce,
 		JwtService:     &jwtService,
 		SessionService: &service.CookieSessionService{},
+		ProductHandler: &productHandler,
 	}
 
 	e := echo.New()
@@ -26,10 +29,19 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("choo-pos"))))
 
-	e.GET("/", webController.Index)
-	e.GET("/login", webController.Login)
-	e.GET("/auth", webController.Auth)
-	e.GET("/logout", webController.Logout)
+	e.GET("/user", controller.User)
+	e.GET("/login", controller.Login)
+	e.GET("/auth", controller.Auth)
+	e.GET("/logout", controller.Logout)
+
+	e.GET("/product", controller.GetAllProduct)
+	e.POST("/product", controller.CreateProduct)
+	// e.GET("/product/:id", controller.GetCustomer)
+	// e.PUT("/product/:id", controller.UpdateProduct)
+	// e.DELETE("/product/:id", controller.DeleteProduct)
+
+	// e.GET("/cart", controller.Logout)
+	// e.GET("/checkout", controller.Logout)
 
 	port := os.Getenv("PORT")
 	if port == "" {

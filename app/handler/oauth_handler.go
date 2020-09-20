@@ -2,6 +2,7 @@ package handler
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,12 +13,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/choobot/choo-pos-backend/app/model"
 	"golang.org/x/oauth2"
 )
 
 type OAuthHandler interface {
 	GenerateOAuthState(callback string) string
 	OAuthConfig() *oauth2.Config
+	Verify(idToken string) (*model.User, error)
 	Signout(oauthToken string) error
 }
 
@@ -34,6 +37,30 @@ func (this *LineOAuthHandler) GenerateOAuthState(callback string) string {
 
 func (this *LineOAuthHandler) OAuthConfig() *oauth2.Config {
 	return this.oAuthConfig
+}
+
+func (this *LineOAuthHandler) Verify(idToken string) (*model.User, error) {
+	form := url.Values{}
+	form.Add("id_token", idToken)
+	form.Add("client_id", this.OAuthConfig().ClientID)
+	req, err := http.NewRequest("POST", "https://api.line.me/oauth2/v2.1/verify", strings.NewReader(form.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New((string(body)))
+	}
+	var user model.User
+	err = json.Unmarshal(body, &user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (this *LineOAuthHandler) Signout(oauthToken string) error {

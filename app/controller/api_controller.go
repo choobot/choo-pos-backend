@@ -7,15 +7,16 @@ import (
 	"github.com/choobot/choo-pos-backend/app/handler"
 	"github.com/choobot/choo-pos-backend/app/model"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo"
 	"golang.org/x/oauth2"
 )
 
-var tokens = map[string]model.User{}
+var visaTokenMap = map[string]string{}
+var accessTokenIdTokenMap = map[string]string{}
 
 type ApiController struct {
 	OAuthHandler     handler.OAuthHandler
-	JwtHandler       handler.JwtHandler
 	SessionHandler   handler.SessionHandler
 	ProductHandler   handler.ProductHandler
 	UserHandler      handler.UserHandler
@@ -37,28 +38,49 @@ func (this *ApiController) SetNoCache(c echo.Context) {
 	c.Response().Header().Set("Expires", "0")
 }
 
-func (this *ApiController) verifyToken(c echo.Context) (*model.User, *ApiError) {
-	token := c.Request().Header.Get("Authorization")
-	if token == "" {
-		token = this.SessionHandler.Get(c, "token").(string)
-	} else {
-		token = strings.ReplaceAll(token, "Bearer ", "")
-	}
-	if user, ok := tokens[token]; ok {
-		return &user, nil
+func (this *ApiController) GetAccessTokenFromHeader(c echo.Context) string {
+	accessToken := c.Request().Header.Get("Authorization")
+	accessToken = strings.ReplaceAll(accessToken, "Bearer ", "")
+	return accessToken
+}
+
+func (this *ApiController) VerifyAccessToken(c echo.Context) (*model.User, *ApiError) {
+	accessToken := this.GetAccessTokenFromHeader(c)
+	if idToken, ok := accessTokenIdTokenMap[accessToken]; ok {
+		if user, err := this.OAuthHandler.Verify(idToken); err == nil {
+			return user, nil
+		}
 	}
 	err := &ApiError{
 		Error: Error{
 			Code:  http.StatusUnauthorized,
-			Error: "No user token, please use Login API first",
+			Error: "Invalid user token, please use Login API first",
 		},
 	}
 	return nil, err
 }
 
+func (this *ApiController) GetAccessToken(c echo.Context) error {
+	this.SetNoCache(c)
+	visa := c.QueryParam("visa")
+	if accessToken, ok := visaTokenMap[visa]; ok {
+		delete(visaTokenMap, visa)
+		return c.JSONPretty(http.StatusOK, map[string]string{
+			"token": accessToken,
+		}, "  ")
+	}
+	err := &ApiError{
+		Error: Error{
+			Code:  http.StatusUnauthorized,
+			Error: "Invalid visa, please use Login API first",
+		},
+	}
+	return c.JSON(err.Error.Code, err)
+}
+
 func (this *ApiController) User(c echo.Context) error {
 	this.SetNoCache(c)
-	user, err := this.verifyToken(c)
+	user, err := this.VerifyAccessToken(c)
 	if err != nil {
 		return c.JSON(err.Error.Code, err)
 	}
@@ -102,9 +124,13 @@ func (this *ApiController) Auth(c echo.Context) error {
 		}
 		return c.JSON(err.Error.Code, err)
 	}
-	token := string(oauthToken.AccessToken)
-	user, e := this.JwtHandler.ExtractUserProfile(oauthToken.Extra("id_token").(string))
-	user.Token = token
+	accessToken := string(oauthToken.AccessToken)
+	visa := uuid.New().String()
+	visaTokenMap[visa] = accessToken
+	idToken := oauthToken.Extra("id_token").(string)
+	accessTokenIdTokenMap[accessToken] = idToken
+
+	user, e := this.OAuthHandler.Verify(idToken)
 	if e != nil {
 		err := ApiError{
 			Error: Error{
@@ -114,23 +140,22 @@ func (this *ApiController) Auth(c echo.Context) error {
 		}
 		return c.JSON(err.Error.Code, err)
 	}
-	tokens[token] = user
-	this.SessionHandler.Set(c, "token", token)
 	this.UserHandler.CreateLog(user.Id)
+
+	callback += "?visa=" + visa
 
 	return c.Redirect(http.StatusTemporaryRedirect, callback)
 }
 
 func (this *ApiController) Logout(c echo.Context) error {
 	this.SetNoCache(c)
-	user, err := this.verifyToken(c)
-	if err != nil {
+	if _, err := this.VerifyAccessToken(c); err != nil {
 		return c.JSON(err.Error.Code, err)
 	}
 
-	oauthToken := user.Token
+	accessToken := this.GetAccessTokenFromHeader(c)
 
-	if e := this.OAuthHandler.Signout(oauthToken); e != nil {
+	if e := this.OAuthHandler.Signout(accessToken); e != nil {
 		err := ApiError{
 			Error: Error{
 				Code:  http.StatusInternalServerError,
@@ -139,14 +164,13 @@ func (this *ApiController) Logout(c echo.Context) error {
 		}
 		return c.JSON(err.Error.Code, err)
 	}
-	delete(tokens, user.Token)
-	this.SessionHandler.Destroy(c)
+	delete(accessTokenIdTokenMap, accessToken)
 	return c.NoContent(http.StatusOK)
 }
 
 func (this *ApiController) CreateProduct(c echo.Context) error {
 	this.SetNoCache(c)
-	if _, err := this.verifyToken(c); err != nil {
+	if _, err := this.VerifyAccessToken(c); err != nil {
 		return c.JSON(err.Error.Code, err)
 	}
 
@@ -175,9 +199,9 @@ func (this *ApiController) CreateProduct(c echo.Context) error {
 
 func (this *ApiController) GetAllProduct(c echo.Context) error {
 	this.SetNoCache(c)
-	// if _, err := this.verifyToken(c); err != nil {
-	// 	return c.JSON(err.Error.Code, err)
-	// }
+	if _, err := this.VerifyAccessToken(c); err != nil {
+		return c.JSON(err.Error.Code, err)
+	}
 
 	products, e := this.ProductHandler.GetAll()
 	if e != nil {
@@ -197,9 +221,9 @@ func (this *ApiController) GetAllProduct(c echo.Context) error {
 
 func (this *ApiController) GetAllUserLog(c echo.Context) error {
 	this.SetNoCache(c)
-	// if _, err := this.verifyToken(c); err != nil {
-	// 	return c.JSON(err.Error.Code, err)
-	// }
+	if _, err := this.VerifyAccessToken(c); err != nil {
+		return c.JSON(err.Error.Code, err)
+	}
 
 	userLogs, e := this.UserHandler.GetAllLog()
 	if e != nil {
@@ -219,9 +243,9 @@ func (this *ApiController) GetAllUserLog(c echo.Context) error {
 
 func (this *ApiController) UpdateCart(c echo.Context) error {
 	this.SetNoCache(c)
-	// if _, err := this.verifyToken(c); err != nil {
-	// 	return c.JSON(err.Error.Code, err)
-	// }
+	if _, err := this.VerifyAccessToken(c); err != nil {
+		return c.JSON(err.Error.Code, err)
+	}
 
 	order := &model.Order{}
 	if e := c.Bind(order); e != nil {

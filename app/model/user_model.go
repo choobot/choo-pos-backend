@@ -1,10 +1,9 @@
 package model
 
 type User struct {
-	Id      string `json:"id"`
+	Id      string `json:"sub"`
 	Name    string `json:"name"`
 	Picture string `json:"picture"`
-	Token   string `json:"token"`
 }
 
 type UserLog struct {

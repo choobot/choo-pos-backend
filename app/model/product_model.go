@@ -9,3 +9,7 @@ type Product struct {
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`
 }
+
+type Books struct {
+	Books []Product `json:"books"`
+}

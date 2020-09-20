@@ -142,8 +142,7 @@ func (this *ApiController) Logout(c echo.Context) error {
 
 func (this *ApiController) CreateProduct(c echo.Context) error {
 	this.SetNoCache(c)
-	_, err := this.verifyToken(c)
-	if err != nil {
+	if _, err := this.verifyToken(c); err != nil {
 		return c.JSON(err.Error.Code, err)
 	}
 
@@ -172,10 +171,9 @@ func (this *ApiController) CreateProduct(c echo.Context) error {
 
 func (this *ApiController) GetAllProduct(c echo.Context) error {
 	this.SetNoCache(c)
-	_, err := this.verifyToken(c)
-	if err != nil {
-		return c.JSON(err.Error.Code, err)
-	}
+	// if _, err := this.verifyToken(c); err != nil {
+	// 	return c.JSON(err.Error.Code, err)
+	// }
 
 	products, e := this.ProductHandler.GetAll()
 	if e != nil {

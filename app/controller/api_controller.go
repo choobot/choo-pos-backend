@@ -140,7 +140,7 @@ func (this *ApiController) Auth(c echo.Context) error {
 		}
 		return c.JSON(err.Error.Code, err)
 	}
-	this.UserHandler.CreateLog(user.Id)
+	this.UserHandler.CreateLog(*user)
 
 	callback += "?visa=" + visa
 

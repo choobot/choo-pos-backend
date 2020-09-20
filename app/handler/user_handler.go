@@ -11,7 +11,7 @@ import (
 )
 
 type UserHandler interface {
-	CreateLog(id string) error
+	CreateLog(user model.User) error
 	GetAllLog() ([]model.UserLog, error)
 }
 
@@ -44,6 +44,8 @@ func (this *MySqlUserHandler) CreateTablesIfNotExist() error {
 		CREATE TABLE user_log (
 			id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 			user_id VARCHAR(255) NOT NULL,
+			name VARCHAR(255) NOT NULL,
+			picture VARCHAR(255) NOT NULL,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		) CHARACTER SET utf8 COLLATE utf8_general_ci`
 
@@ -55,13 +57,13 @@ func (this *MySqlUserHandler) CreateTablesIfNotExist() error {
 	return nil
 }
 
-func (this *MySqlUserHandler) CreateLog(id string) error {
+func (this *MySqlUserHandler) CreateLog(user model.User) error {
 	this.SetTimeZone()
 	if err := this.CreateTablesIfNotExist(); err != nil {
 		return err
 	}
-	sql := `INSERT INTO user_log (user_id) VALUES(?)`
-	result, err := this.db.Exec(sql, id)
+	sql := `INSERT INTO user_log (user_id, name, picture) VALUES(?, ?, ?)`
+	result, err := this.db.Exec(sql, user.Id, user.Name, user.Picture)
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func (this *MySqlUserHandler) GetAllLog() ([]model.UserLog, error) {
 		return nil, err
 	}
 	var userLogs []model.UserLog
-	rows, err := this.db.Query("SELECT CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), user_id FROM user_log ORDER BY created_at DESC")
+	rows, err := this.db.Query("SELECT CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), user_id, name, picture FROM user_log ORDER BY created_at DESC")
 	if err != nil {
 		return nil, err
 	}
@@ -90,14 +92,18 @@ func (this *MySqlUserHandler) GetAllLog() ([]model.UserLog, error) {
 
 	for rows.Next() {
 		var userId string
+		var name string
+		var picture string
 		var createdAt string
-		if err := rows.Scan(&createdAt, &userId); err != nil {
+		if err := rows.Scan(&createdAt, &userId, &name, &picture); err != nil {
 			return nil, err
 		}
 		userLog := model.UserLog{
 			Time: createdAt,
 			User: model.User{
-				Id: userId,
+				Id:      userId,
+				Name:    name,
+				Picture: picture,
 			},
 		}
 		userLogs = append(userLogs, userLog)

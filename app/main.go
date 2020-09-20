@@ -5,7 +5,6 @@ import (
 
 	"github.com/choobot/choo-pos-backend/app/controller"
 	"github.com/choobot/choo-pos-backend/app/handler"
-	"github.com/choobot/choo-pos-backend/app/service"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
@@ -14,13 +13,13 @@ import (
 )
 
 func main() {
-	oAuthSerivce := service.NewLineOAuthService()
-	jwtService := service.NewLineJwtService()
+	oAuthSerivce := handler.NewLineOAuthHandler()
+	jwtHandler := handler.NewLineJwtHandler()
 	productHandler := handler.NewProductMySqlHandler()
 	controller := controller.ApiController{
-		OAuthService:   &oAuthSerivce,
-		JwtService:     &jwtService,
-		SessionService: &service.CookieSessionService{},
+		OAuthHandler:   &oAuthSerivce,
+		JwtHandler:     &jwtHandler,
+		SessionHandler: &handler.CookieSessionHandler{},
 		ProductHandler: &productHandler,
 	}
 

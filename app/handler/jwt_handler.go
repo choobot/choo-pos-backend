@@ -1,4 +1,4 @@
-package service
+package handler
 
 import (
 	"errors"
@@ -9,21 +9,21 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type JwtService interface {
+type JwtHandler interface {
 	ExtractUserProfile(tokenValue string) (model.User, error)
 }
 
-func NewLineJwtService() LineJwtService {
-	return LineJwtService{
+func NewLineJwtHandler() LineJwtHandler {
+	return LineJwtHandler{
 		ClientSecret: os.Getenv("LINE_LOGIN_SECRET"),
 	}
 }
 
-type LineJwtService struct {
+type LineJwtHandler struct {
 	ClientSecret string
 }
 
-func (this *LineJwtService) ExtractUserProfile(tokenValue string) (model.User, error) {
+func (this *LineJwtHandler) ExtractUserProfile(tokenValue string) (model.User, error) {
 	var user model.User
 	token, _ := jwt.Parse(tokenValue, func(token *jwt.Token) (interface{}, error) {
 		return []byte(this.ClientSecret), nil

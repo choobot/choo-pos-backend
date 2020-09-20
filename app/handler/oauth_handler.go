@@ -1,4 +1,4 @@
-package service
+package handler
 
 import (
 	"crypto/sha1"
@@ -15,28 +15,28 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type OAuthService interface {
+type OAuthHandler interface {
 	GenerateOAuthState(callback string) string
 	OAuthConfig() *oauth2.Config
 	Signout(oauthToken string) error
 }
 
-type LineOAuthService struct {
+type LineOAuthHandler struct {
 	oAuthConfig *oauth2.Config
 }
 
-func (this *LineOAuthService) GenerateOAuthState(callback string) string {
+func (this *LineOAuthHandler) GenerateOAuthState(callback string) string {
 	this.oAuthConfig.RedirectURL = callback
 	salt := "choo-pos"
 	data := []byte(strconv.Itoa(int(time.Now().Unix())) + salt)
 	return fmt.Sprintf("%x", sha1.Sum(data))
 }
 
-func (this *LineOAuthService) OAuthConfig() *oauth2.Config {
+func (this *LineOAuthHandler) OAuthConfig() *oauth2.Config {
 	return this.oAuthConfig
 }
 
-func (this *LineOAuthService) Signout(oauthToken string) error {
+func (this *LineOAuthHandler) Signout(oauthToken string) error {
 	form := url.Values{}
 	form.Add("access_token", oauthToken)
 	form.Add("client_id", this.OAuthConfig().ClientID)
@@ -56,7 +56,7 @@ func (this *LineOAuthService) Signout(oauthToken string) error {
 	return nil
 }
 
-func NewLineOAuthService() LineOAuthService {
+func NewLineOAuthHandler() LineOAuthHandler {
 	oAuthConfig := oauth2.Config{
 		ClientID:     os.Getenv("LINE_LOGIN_ID"),
 		ClientSecret: os.Getenv("LINE_LOGIN_SECRET"),
@@ -66,7 +66,7 @@ func NewLineOAuthService() LineOAuthService {
 			TokenURL: "https://api.line.me/oauth2/v2.1/token",
 		},
 	}
-	return LineOAuthService{
+	return LineOAuthHandler{
 		oAuthConfig: &oAuthConfig,
 	}
 }

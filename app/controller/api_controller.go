@@ -6,7 +6,6 @@ import (
 
 	"github.com/choobot/choo-pos-backend/app/handler"
 	"github.com/choobot/choo-pos-backend/app/model"
-	"github.com/choobot/choo-pos-backend/app/service"
 
 	"github.com/labstack/echo"
 	"golang.org/x/oauth2"
@@ -15,9 +14,9 @@ import (
 var tokens = map[string]model.User{}
 
 type ApiController struct {
-	OAuthService   service.OAuthService
-	JwtService     service.JwtService
-	SessionService service.SessionService
+	OAuthHandler   handler.OAuthHandler
+	JwtHandler     handler.JwtHandler
+	SessionHandler handler.SessionHandler
 	ProductHandler handler.ProductHandler
 }
 
@@ -39,7 +38,7 @@ func (this *ApiController) SetNoCache(c echo.Context) {
 func (this *ApiController) verifyToken(c echo.Context) (*model.User, *ApiError) {
 	token := c.Request().Header.Get("Authorization")
 	if token == "" {
-		token = this.SessionService.Get(c, "token").(string)
+		token = this.SessionHandler.Get(c, "token").(string)
 	} else {
 		token = strings.ReplaceAll(token, "Bearer ", "")
 	}
@@ -68,18 +67,18 @@ func (this *ApiController) Login(c echo.Context) error {
 	this.SetNoCache(c)
 	frontendCallback := c.QueryParam("callback")
 	backendCallback := "https://" + c.Request().Host + "/auth"
-	oauthState := this.OAuthService.GenerateOAuthState(backendCallback)
-	this.SessionService.Set(c, "callback", frontendCallback)
-	this.SessionService.Set(c, "oauthState", oauthState)
-	url := this.OAuthService.OAuthConfig().AuthCodeURL(oauthState, oauth2.AccessTypeOnline)
+	oauthState := this.OAuthHandler.GenerateOAuthState(backendCallback)
+	this.SessionHandler.Set(c, "callback", frontendCallback)
+	this.SessionHandler.Set(c, "oauthState", oauthState)
+	url := this.OAuthHandler.OAuthConfig().AuthCodeURL(oauthState, oauth2.AccessTypeOnline)
 
 	return c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (this *ApiController) Auth(c echo.Context) error {
 	this.SetNoCache(c)
-	oauthState := this.SessionService.Get(c, "oauthState").(string)
-	callback := this.SessionService.Get(c, "callback").(string)
+	oauthState := this.SessionHandler.Get(c, "oauthState").(string)
+	callback := this.SessionHandler.Get(c, "callback").(string)
 	state := c.QueryParam("state")
 	if oauthState != "" && state != oauthState {
 		err := ApiError{
@@ -91,7 +90,7 @@ func (this *ApiController) Auth(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 	code := c.QueryParam("code")
-	oauthToken, e := this.OAuthService.OAuthConfig().Exchange(oauth2.NoContext, code)
+	oauthToken, e := this.OAuthHandler.OAuthConfig().Exchange(oauth2.NoContext, code)
 	if e != nil {
 		err := ApiError{
 			Error: Error{
@@ -102,7 +101,7 @@ func (this *ApiController) Auth(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 	token := string(oauthToken.AccessToken)
-	user, e := this.JwtService.ExtractUserProfile(oauthToken.Extra("id_token").(string))
+	user, e := this.JwtHandler.ExtractUserProfile(oauthToken.Extra("id_token").(string))
 	user.Token = token
 	if e != nil {
 		err := ApiError{
@@ -114,7 +113,7 @@ func (this *ApiController) Auth(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 	tokens[token] = user
-	this.SessionService.Set(c, "token", token)
+	this.SessionHandler.Set(c, "token", token)
 
 	return c.Redirect(http.StatusTemporaryRedirect, callback)
 }
@@ -128,7 +127,7 @@ func (this *ApiController) Logout(c echo.Context) error {
 
 	oauthToken := user.Token
 
-	if e := this.OAuthService.Signout(oauthToken); e != nil {
+	if e := this.OAuthHandler.Signout(oauthToken); e != nil {
 		err := ApiError{
 			Error: Error{
 				Code:  http.StatusInternalServerError,

@@ -15,12 +15,15 @@ import (
 func main() {
 	oAuthSerivce := handler.NewLineOAuthHandler()
 	jwtHandler := handler.NewLineJwtHandler()
-	productHandler := handler.NewProductMySqlHandler()
+	productHandler := handler.NewMySqlProductHandler()
+	userHandler := handler.NewMySqlUserHandler()
 	controller := controller.ApiController{
-		OAuthHandler:   &oAuthSerivce,
-		JwtHandler:     &jwtHandler,
-		SessionHandler: &handler.CookieSessionHandler{},
-		ProductHandler: &productHandler,
+		OAuthHandler:     &oAuthSerivce,
+		JwtHandler:       &jwtHandler,
+		SessionHandler:   &handler.CookieSessionHandler{},
+		ProductHandler:   &productHandler,
+		UserHandler:      &userHandler,
+		PromotionHandler: &handler.FixPromotionHandler{},
 	}
 
 	e := echo.New()
@@ -39,8 +42,10 @@ func main() {
 	// e.PUT("/product/:id", controller.UpdateProduct)
 	// e.DELETE("/product/:id", controller.DeleteProduct)
 
-	// e.GET("/cart", controller.Logout)
+	e.PUT("/cart", controller.UpdateCart)
 	// e.GET("/checkout", controller.Logout)
+
+	e.GET("/user/log", controller.GetAllUserLog)
 
 	port := os.Getenv("PORT")
 	if port == "" {

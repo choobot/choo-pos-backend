@@ -14,10 +14,12 @@ import (
 var tokens = map[string]model.User{}
 
 type ApiController struct {
-	OAuthHandler   handler.OAuthHandler
-	JwtHandler     handler.JwtHandler
-	SessionHandler handler.SessionHandler
-	ProductHandler handler.ProductHandler
+	OAuthHandler     handler.OAuthHandler
+	JwtHandler       handler.JwtHandler
+	SessionHandler   handler.SessionHandler
+	ProductHandler   handler.ProductHandler
+	UserHandler      handler.UserHandler
+	PromotionHandler handler.PromotionHandler
 }
 
 type ApiError struct {
@@ -114,6 +116,7 @@ func (this *ApiController) Auth(c echo.Context) error {
 	}
 	tokens[token] = user
 	this.SessionHandler.Set(c, "token", token)
+	this.UserHandler.CreateLog(user.Id)
 
 	return c.Redirect(http.StatusTemporaryRedirect, callback)
 }
@@ -137,6 +140,7 @@ func (this *ApiController) Logout(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 	delete(tokens, user.Token)
+	this.SessionHandler.Destroy(c)
 	return c.NoContent(http.StatusOK)
 }
 
@@ -189,4 +193,87 @@ func (this *ApiController) GetAllProduct(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"books": products,
 	})
+}
+
+func (this *ApiController) GetAllUserLog(c echo.Context) error {
+	this.SetNoCache(c)
+	// if _, err := this.verifyToken(c); err != nil {
+	// 	return c.JSON(err.Error.Code, err)
+	// }
+
+	userLogs, e := this.UserHandler.GetAllLog()
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"user_logs": userLogs,
+	})
+}
+
+func (this *ApiController) UpdateCart(c echo.Context) error {
+	this.SetNoCache(c)
+	// if _, err := this.verifyToken(c); err != nil {
+	// 	return c.JSON(err.Error.Code, err)
+	// }
+
+	order := &model.Order{}
+	if e := c.Bind(order); e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusBadRequest,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	// Load Product detail
+	var ids []interface{}
+	for _, item := range order.Items {
+		ids = append(ids, item.Product.Id)
+	}
+
+	productsMap, e := this.ProductHandler.GetByIds(ids)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	for i, item := range order.Items {
+		order.Items[i].Product = productsMap[item.Product.Id]
+		order.Items[i].Price = order.Items[i].Product.Price
+	}
+
+	// Calculate Discount
+	order, e = this.PromotionHandler.CalculateDiscount(order, productsMap)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	// Sum Total
+	total := 0.0
+	for _, item := range order.Items {
+		total += item.Price
+	}
+	order.Total = total
+
+	return c.JSONPretty(http.StatusOK, order, "  ")
 }

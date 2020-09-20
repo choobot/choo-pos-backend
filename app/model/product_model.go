@@ -1,10 +1,10 @@
 package model
 
 type Product struct {
-	Cover     string  `json:"cover"`
-	Price     float32 `json:"price"`
-	Title     string  `json:"title"`
 	Id        string  `json:"id"`
+	Cover     string  `json:"cover"`
+	Price     float64 `json:"price"`
+	Title     string  `json:"title"`
 	Status    int     `json:"status"`
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`

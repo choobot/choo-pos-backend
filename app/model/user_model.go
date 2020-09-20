@@ -6,3 +6,8 @@ type User struct {
 	Picture string `json:"picture"`
 	Token   string `json:"token"`
 }
+
+type UserLog struct {
+	Time string `json:"time"`
+	User User   `json:"user"`
+}

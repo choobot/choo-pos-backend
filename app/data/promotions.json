@@ -1,0 +1,19 @@
+{
+    "promotions": [
+        {
+            "id": "1",
+            "name": "Special discount only for all Harry Potter book series (7 books)",
+            "type": "tier_unique_num",
+            "tiers": [0,0.1,0.11,0.12,0.13,0.14,0.15],
+            "product_ids": [
+                "9781408855652",
+                "9781408855669",
+                "9781408855676",
+                "9781408855683",
+                "9781408855690",
+                "9781408855706",
+                "9781408855713"
+            ]
+        }
+    ]
+}

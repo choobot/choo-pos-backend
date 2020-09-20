@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/choobot/choo-pos-backend/app/model"
 
@@ -15,20 +16,21 @@ import (
 type ProductHandler interface {
 	Create(product model.Product) error
 	GetAll() ([]model.Product, error)
+	GetByIds(ids []interface{}) (map[string]model.Product, error)
 }
 
-type ProductMySqlHandler struct {
+type MySqlProductHandler struct {
 	db *sql.DB
 }
 
-func NewProductMySqlHandler() ProductMySqlHandler {
+func NewMySqlProductHandler() MySqlProductHandler {
 	db, _ := sql.Open("mysql", os.Getenv("DATA_SOURCE_NAME"))
-	return ProductMySqlHandler{
+	return MySqlProductHandler{
 		db: db,
 	}
 }
 
-func (this *ProductMySqlHandler) SetTimeZone() error {
+func (this *MySqlProductHandler) SetTimeZone() error {
 	sql := `SET time_zone = 'Asia/Bangkok'`
 	_, err := this.db.Exec(sql)
 	if err != nil {
@@ -38,7 +40,7 @@ func (this *ProductMySqlHandler) SetTimeZone() error {
 	return nil
 }
 
-func (this *ProductMySqlHandler) CreateTablesIfNotExist() error {
+func (this *MySqlProductHandler) CreateTablesIfNotExist() error {
 	sql := "SELECT 1 FROM product LIMIT 1"
 	_, err := this.db.Query(sql)
 	if err != nil {
@@ -62,7 +64,6 @@ func (this *ProductMySqlHandler) CreateTablesIfNotExist() error {
 		if err != nil {
 			return err
 		}
-		// var books model.Books
 		var books model.Books
 		err = json.Unmarshal(file, &books)
 		if err != nil {
@@ -79,7 +80,7 @@ func (this *ProductMySqlHandler) CreateTablesIfNotExist() error {
 	return nil
 }
 
-func (this *ProductMySqlHandler) Create(product model.Product) error {
+func (this *MySqlProductHandler) Create(product model.Product) error {
 	this.SetTimeZone()
 	if err := this.CreateTablesIfNotExist(); err != nil {
 		return err
@@ -100,7 +101,7 @@ func (this *ProductMySqlHandler) Create(product model.Product) error {
 	return nil
 }
 
-func (this *ProductMySqlHandler) GetAll() ([]model.Product, error) {
+func (this *MySqlProductHandler) GetAll() ([]model.Product, error) {
 	this.SetTimeZone()
 	if err := this.CreateTablesIfNotExist(); err != nil {
 		return nil, err
@@ -115,7 +116,7 @@ func (this *ProductMySqlHandler) GetAll() ([]model.Product, error) {
 	for rows.Next() {
 		var id string
 		var title string
-		var price float32
+		var price float64
 		var cover string
 		var status int
 		var createdAt string
@@ -139,4 +140,47 @@ func (this *ProductMySqlHandler) GetAll() ([]model.Product, error) {
 	}
 
 	return products, nil
+}
+
+func (this *MySqlProductHandler) GetByIds(ids []interface{}) (map[string]model.Product, error) {
+	this.SetTimeZone()
+	if err := this.CreateTablesIfNotExist(); err != nil {
+		return nil, err
+	}
+	productsMap := map[string]model.Product{}
+	sql := "SELECT id, title, price, cover, status, CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), CONVERT_TZ(updated_at,'GMT','Asia/Bangkok') FROM product WHERE id IN (?" + strings.Repeat(",?", len(ids)-1) + ")"
+
+	rows, err := this.db.Query(sql, ids...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id string
+		var title string
+		var price float64
+		var cover string
+		var status int
+		var createdAt string
+		var updatedAt string
+		if err := rows.Scan(&id, &title, &price, &cover, &status, &createdAt, &updatedAt); err != nil {
+			return nil, err
+		}
+		product := model.Product{
+			Id:        id,
+			Title:     title,
+			Price:     price,
+			Cover:     cover,
+			Status:    status,
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+		}
+		productsMap[id] = product
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return productsMap, nil
 }

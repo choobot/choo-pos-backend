@@ -29,7 +29,7 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("choo-pos"))))
 
-	e.GET("/user", controller.User)
+	e.GET("/user", controller.GetUserInfo)
 	e.GET("/user/login", controller.Login)
 	e.GET("/user/logout", controller.Logout)
 	e.GET("/user/token", controller.GetAccessToken)

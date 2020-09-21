@@ -1,0 +1,25 @@
+package handler
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo-contrib/session"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestCookieSessionHandler_SetGet(t *testing.T) {
+	e := echo.New()
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	req.
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	cookieSessionHandler := CookieSessionHandler{}
+	cookieSessionHandler.Set(c, "key", "value")
+	value := cookieSessionHandler.Get(c, "key")
+	assert.Equal(t, "value", value)
+}

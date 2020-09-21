@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo"
-	"golang.org/x/oauth2"
 )
 
 var visaTokenMap = map[string]string{}
@@ -78,7 +77,7 @@ func (this *ApiController) GetAccessToken(c echo.Context) error {
 	return c.JSON(err.Error.Code, err)
 }
 
-func (this *ApiController) User(c echo.Context) error {
+func (this *ApiController) GetUserInfo(c echo.Context) error {
 	this.SetNoCache(c)
 	user, err := this.VerifyAccessToken(c)
 	if err != nil {
@@ -94,17 +93,17 @@ func (this *ApiController) Login(c echo.Context) error {
 	oauthState := this.OAuthHandler.GenerateOAuthState(backendCallback)
 	this.SessionHandler.Set(c, "callback", frontendCallback)
 	this.SessionHandler.Set(c, "oauthState", oauthState)
-	url := this.OAuthHandler.OAuthConfig().AuthCodeURL(oauthState, oauth2.AccessTypeOnline)
+	url := this.OAuthHandler.GenerateAuthCodeURL(oauthState)
 
 	return c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (this *ApiController) Auth(c echo.Context) error {
 	this.SetNoCache(c)
-	oauthState := this.SessionHandler.Get(c, "oauthState").(string)
-	callback := this.SessionHandler.Get(c, "callback").(string)
+	oauthState := this.SessionHandler.Get(c, "oauthState")
+	callback := this.SessionHandler.Get(c, "callback")
 	state := c.QueryParam("state")
-	if oauthState != "" && state != oauthState {
+	if oauthState == "" || state != oauthState {
 		err := ApiError{
 			Error: Error{
 				Code:  http.StatusUnauthorized,
@@ -114,7 +113,8 @@ func (this *ApiController) Auth(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 	code := c.QueryParam("code")
-	oauthToken, e := this.OAuthHandler.OAuthConfig().Exchange(oauth2.NoContext, code)
+
+	accessToken, idToken, user, e := this.OAuthHandler.ExchangeToken(code)
 	if e != nil {
 		err := ApiError{
 			Error: Error{
@@ -124,22 +124,9 @@ func (this *ApiController) Auth(c echo.Context) error {
 		}
 		return c.JSON(err.Error.Code, err)
 	}
-	accessToken := string(oauthToken.AccessToken)
 	visa := uuid.New().String()
 	visaTokenMap[visa] = accessToken
-	idToken := oauthToken.Extra("id_token").(string)
 	accessTokenIdTokenMap[accessToken] = idToken
-
-	user, e := this.OAuthHandler.Verify(idToken)
-	if e != nil {
-		err := ApiError{
-			Error: Error{
-				Code:  http.StatusInternalServerError,
-				Error: e.Error(),
-			},
-		}
-		return c.JSON(err.Error.Code, err)
-	}
 	this.UserHandler.CreateLog(*user)
 
 	callback += "?visa=" + visa

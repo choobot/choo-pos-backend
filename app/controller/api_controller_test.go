@@ -355,7 +355,12 @@ func TestApiController_UpdateCart(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	c, rec = createGoodTokenRequest()
+	e = echo.New()
+	req = httptest.NewRequest(http.MethodGet, "/", strings.NewReader(jsonMsg))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req.Header.Set("Authorization", "Bearer token_value")
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
 	mockOAuthHandler.EXPECT().Verify("id_token_value").Return(&model.User{}, nil)
 	mockProductHandler.EXPECT().GetByIds(gomock.Any()).Return(map[string]model.Product{}, nil)
 	mockPromotionHandler.EXPECT().CalculateDiscount(gomock.Any(), gomock.Any()).Return(nil, errors.New("error_value"))
@@ -364,7 +369,12 @@ func TestApiController_UpdateCart(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, rec.Code)
 
-	c, rec = createGoodTokenRequest()
+	e = echo.New()
+	req = httptest.NewRequest(http.MethodGet, "/", strings.NewReader(jsonMsg))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req.Header.Set("Authorization", "Bearer token_value")
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
 	mockOAuthHandler.EXPECT().Verify("id_token_value").Return(&model.User{}, nil)
 	mockProductHandler.EXPECT().GetByIds(gomock.Any()).Return(nil, errors.New("error_value"))
 

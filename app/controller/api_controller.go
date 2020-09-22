@@ -283,9 +283,12 @@ func (this *ApiController) UpdateCart(c echo.Context) error {
 
 	// Sum Total
 	total := 0.0
+	subtotal := 0.0
 	for _, item := range order.Items {
 		total += item.Price
+		subtotal += item.Product.Price
 	}
+	order.Subtotal = subtotal
 	order.Total = total
 
 	return c.JSONPretty(http.StatusOK, order, "  ")

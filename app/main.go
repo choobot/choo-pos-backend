@@ -28,6 +28,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("choo-pos"))))
+	e.Use(middleware.CORS())
 
 	e.GET("/user", controller.GetUserInfo)
 	e.GET("/user/login", controller.Login)

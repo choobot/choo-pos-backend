@@ -245,38 +245,40 @@ func (this *ApiController) UpdateCart(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 
-	// Load Product detail
-	var ids []interface{}
-	for _, item := range order.Items {
-		ids = append(ids, item.Product.Id)
-	}
-
-	productsMap, e := this.ProductHandler.GetByIds(ids)
-	if e != nil {
-		err := ApiError{
-			Error: Error{
-				Code:  http.StatusInternalServerError,
-				Error: e.Error(),
-			},
+	if len(order.Items) > 0 {
+		// Load Product detail
+		var ids []interface{}
+		for _, item := range order.Items {
+			ids = append(ids, item.Product.Id)
 		}
-		return c.JSON(err.Error.Code, err)
-	}
 
-	for i, item := range order.Items {
-		order.Items[i].Product = productsMap[item.Product.Id]
-		order.Items[i].Price = order.Items[i].Product.Price
-	}
-
-	// Calculate Discount
-	order, e = this.PromotionHandler.CalculateDiscount(order, productsMap)
-	if e != nil {
-		err := ApiError{
-			Error: Error{
-				Code:  http.StatusInternalServerError,
-				Error: e.Error(),
-			},
+		productsMap, e := this.ProductHandler.GetByIds(ids)
+		if e != nil {
+			err := ApiError{
+				Error: Error{
+					Code:  http.StatusInternalServerError,
+					Error: e.Error(),
+				},
+			}
+			return c.JSON(err.Error.Code, err)
 		}
-		return c.JSON(err.Error.Code, err)
+
+		for i, item := range order.Items {
+			order.Items[i].Product = productsMap[item.Product.Id]
+			order.Items[i].Price = order.Items[i].Product.Price
+		}
+
+		// Calculate Discount
+		order, e = this.PromotionHandler.CalculateDiscount(order, productsMap)
+		if e != nil {
+			err := ApiError{
+				Error: Error{
+					Code:  http.StatusInternalServerError,
+					Error: e.Error(),
+				},
+			}
+			return c.JSON(err.Error.Code, err)
+		}
 	}
 
 	// Sum Total

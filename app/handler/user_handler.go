@@ -87,7 +87,7 @@ func (this *MySqlUserHandler) GetAllLog() ([]model.UserLog, error) {
 		return nil, err
 	}
 	var userLogs []model.UserLog
-	rows, err := this.db.Query("SELECT CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), user_id, name, picture FROM user_log ORDER BY created_at DESC")
+	rows, err := this.db.Query("SELECT created_at, user_id, name, picture FROM user_log ORDER BY created_at DESC")
 	defer rows.Close()
 	if err != nil {
 		return nil, err

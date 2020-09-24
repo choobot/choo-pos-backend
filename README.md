@@ -1,7 +1,8 @@
 # choo-pos-backend
 
 ## Note
-- Repo: https://github.com/choobot/choo-pos-backend
+- Frontend Repo: https://github.com/choobot/choo-pos-backend
+- Backend Repo: https://github.com/choobot/choo-pos-backend
 - API Doc: https://choo-pos-backend.herokuapp.com
 
 ## Live Demo
@@ -13,25 +14,23 @@
 - ngrok CLI
 - Heroku CLI (for Production Deployment only)
 
-## Local Running and Expose to the internet
+## Local Running and Expose to the internet for Development
 - Create LINE Login channel in LINE Developers Console
-- $ ./local-dev-server.sh
-- Config environment variables in .env (see example in .env.example)
+- `$ ./local-dev-server.sh`
+- Config environment variables in `.env` (see example in `.env.example`)
 - The Callback URL for LINE Login API will be something like https://cebccce9ede4.ngrok.io/auth config it in LINE Developers Console
-- $ ./dev.sh
+- `$ ./dev.sh`
 
 ## Unit Testing
-- Config environment variables in .env (see example in .env.example)
-- $ ./test.sh
+- Running locally (see above)
+- `$ ./test.sh`
 
 ## Production Deployment
 - Create LINE Login channel in LINE Developers Console
 - Create Heroku App with ClearDB MySQL add-on in Heroku Dashboard
-- Config environment variables in .env (see example in .env.example)
+- Config environment variables in `.env` (see example in `.env.example`)
 - The Callback URL for LINE Login API will be something like https://choo-pos-backend.herokuapp.com/auth config it in LINE Developers Console
-- $ ./prod.sh
-
-## Postman Testing
+- `$ ./prod.sh`
 
 ## Tech Stack
 - Go

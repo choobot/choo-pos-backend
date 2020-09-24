@@ -4,7 +4,7 @@ services:
   go:
     build: 
       context: ./
-      dockerfile: Dockerfile-dev
+      dockerfile: Dockerfile.dev
     environment:
       - LINE_LOGIN_ID=${LINE_LOGIN_ID}
       - LINE_LOGIN_SECRET=${LINE_LOGIN_SECRET}

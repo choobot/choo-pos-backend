@@ -36,6 +36,7 @@
 - Go
 - Echo
 - GoMock
+- RESTful API
 - OAuth 2.0
 - LINE Login API
 - MySQL

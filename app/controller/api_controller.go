@@ -201,6 +201,17 @@ func (this *ApiController) GetAllProduct(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 
+	products, e = this.PromotionHandler.AddPromotionDetailToProduct(products)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"books": products,
 	})

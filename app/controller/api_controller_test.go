@@ -256,12 +256,15 @@ func TestApiController_GetAllProduct(t *testing.T) {
 	c, rec := createGoodTokenRequest()
 	mockOAuthHandler := handler.NewMockOAuthHandler(controller)
 	mockProductHandler := handler.NewMockProductHandler(controller)
+	mockPromotionHandler := handler.NewMockPromotionHandler(controller)
 	mockOAuthHandler.EXPECT().Verify("id_token_value").Return(&model.User{}, nil)
 	mockProductHandler.EXPECT().GetAll().Return([]model.Product{}, nil)
+	mockPromotionHandler.EXPECT().AddPromotionDetailToProduct(gomock.Any()).Return([]model.Product{}, nil)
 
 	apiController := ApiController{
-		OAuthHandler:   mockOAuthHandler,
-		ProductHandler: mockProductHandler,
+		OAuthHandler:     mockOAuthHandler,
+		ProductHandler:   mockProductHandler,
+		PromotionHandler: mockPromotionHandler,
 	}
 
 	apiController.GetAllProduct(c)
@@ -271,6 +274,15 @@ func TestApiController_GetAllProduct(t *testing.T) {
 	c, rec = createGoodTokenRequest()
 	mockOAuthHandler.EXPECT().Verify("id_token_value").Return(&model.User{}, nil)
 	mockProductHandler.EXPECT().GetAll().Return(nil, errors.New("error_value"))
+
+	apiController.GetAllProduct(c)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+
+	c, rec = createGoodTokenRequest()
+	mockOAuthHandler.EXPECT().Verify("id_token_value").Return(&model.User{}, nil)
+	mockProductHandler.EXPECT().GetAll().Return([]model.Product{}, nil)
+	mockPromotionHandler.EXPECT().AddPromotionDetailToProduct(gomock.Any()).Return(nil, errors.New("error_value"))
 
 	apiController.GetAllProduct(c)
 

@@ -48,3 +48,18 @@ func (mr *MockPromotionHandlerMockRecorder) CalculateDiscount(order, productsMap
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateDiscount", reflect.TypeOf((*MockPromotionHandler)(nil).CalculateDiscount), order, productsMap)
 }
+
+// AddPromotionDetailToProduct mocks base method.
+func (m *MockPromotionHandler) AddPromotionDetailToProduct(products []model.Product) ([]model.Product, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPromotionDetailToProduct", products)
+	ret0, _ := ret[0].([]model.Product)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddPromotionDetailToProduct indicates an expected call of AddPromotionDetailToProduct.
+func (mr *MockPromotionHandlerMockRecorder) AddPromotionDetailToProduct(products interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPromotionDetailToProduct", reflect.TypeOf((*MockPromotionHandler)(nil).AddPromotionDetailToProduct), products)
+}

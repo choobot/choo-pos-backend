@@ -8,6 +8,7 @@ type Product struct {
 	Status    int     `json:"status"`
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`
+	Promotion string  `json:"promotion"`
 }
 
 type Books struct {

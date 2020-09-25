@@ -364,9 +364,6 @@ func (this *ApiController) CreateOrder(c echo.Context) error {
 
 func (this *ApiController) GetOrder(c echo.Context) error {
 	this.SetNoCache(c)
-	if _, err := this.VerifyAccessToken(c); err != nil {
-		return c.JSON(err.Error.Code, err)
-	}
 
 	id := c.Param("id")
 	order, e := this.OrderHandler.GetById(id)

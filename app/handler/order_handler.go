@@ -13,7 +13,7 @@ import (
 
 type OrderHandler interface {
 	Create(order model.Order) (*model.Order, error)
-	// GetAll() ([]model.Order, error)
+	GetAll() ([]model.Order, error)
 	GetById(id string) (*model.Order, error)
 }
 
@@ -177,4 +177,63 @@ func (this *MySqlOrderHandler) GetById(id string) (*model.Order, error) {
 	}
 
 	return &order, nil
+}
+
+func (this *MySqlOrderHandler) GetAll() ([]model.Order, error) {
+	this.SetTimeZone()
+	if err := this.CreateTablesIfNotExist(); err != nil {
+		return nil, err
+	}
+	orders := []model.Order{}
+	sql := "SELECT sale_order.id AS order_id, sale_order.total, sale_order.subtotal, sale_order.cash, sale_order.created_at, sale_order_item.id AS order_item_id, sale_order_item.price, sale_order_item.product_id, sale_order_item.product_title, sale_order_item.product_price FROM sale_order JOIN sale_order_item ON sale_order.id=sale_order_item.order_id ORDER by sale_order.created_at DESC"
+
+	rows, err := this.db.Query(sql)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	currentOrder := model.Order{}
+	for rows.Next() {
+		var orderId string
+		var total float64
+		var subtotal float64
+		var cash float64
+		var createdAt string
+		var orderItemId string
+		var price float64
+		var productId string
+		var productTitle string
+		var productPrice float64
+		if err := rows.Scan(&orderId, &total, &subtotal, &cash, &createdAt, &orderItemId, &price, &productId, &productTitle, &productPrice); err != nil {
+			return nil, err
+		}
+		item := model.OrderItem{
+			Id:    orderItemId,
+			Price: price,
+			Product: model.Product{
+				Id:    productId,
+				Title: productTitle,
+				Price: productPrice,
+			},
+		}
+		currentOrder.Items = append(currentOrder.Items, item)
+		if currentOrder.Id != orderId {
+			order := model.Order{
+				Id:        orderId,
+				Total:     total,
+				Subtotal:  subtotal,
+				Cash:      cash,
+				CreatedAt: createdAt,
+				Items:     currentOrder.Items,
+			}
+			currentOrder = order
+			orders = append(orders, currentOrder)
+		}
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }

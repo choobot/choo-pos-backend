@@ -388,3 +388,22 @@ func (this *ApiController) GetOrder(c echo.Context) error {
 
 	return c.JSONPretty(http.StatusOK, order, "  ")
 }
+
+func (this *ApiController) GetAllOrder(c echo.Context) error {
+	this.SetNoCache(c)
+	if _, err := this.VerifyAccessToken(c); err != nil {
+		return c.JSON(err.Error.Code, err)
+	}
+	orders, e := this.OrderHandler.GetAll()
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	return c.JSONPretty(http.StatusOK, orders, "  ")
+}

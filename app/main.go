@@ -49,6 +49,7 @@ func main() {
 
 	e.POST("/order", controller.CreateOrder)
 	e.GET("/order/:id", controller.GetOrder)
+	e.GET("/order", controller.GetAllOrder)
 
 	e.GET("/user/log", controller.GetAllUserLog)
 

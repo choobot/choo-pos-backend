@@ -126,6 +126,32 @@
 			"response": []
 		},
 		{
+			"name": "Create Order",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"cash\": 1500,\n    \"items\": [\n        {\n            \"product\": {\n                \"id\": \"9781408855676\"\n            }\n        },\n        {\n            \"product\": {\n                \"id\": \"9781408855706\"\n            }\n        },\n        {\n            \"product\": {\n                \"id\": \"9781408855706\"\n            }\n        },\n        {\n            \"product\": {\n                \"id\": \"9781473634176\"\n            }\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/order",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"order"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "User",
 			"event": [
 				{
@@ -189,7 +215,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{url}}/user/token?visa=c77f8074-2278-479d-b972-fe5fb67e603c",
+					"raw": "{{url}}/user/token?visa=c2d5c7eb-e167-4221-8793-77a5d752c94c",
 					"host": [
 						"{{url}}"
 					],
@@ -200,7 +226,7 @@
 					"query": [
 						{
 							"key": "visa",
-							"value": "c77f8074-2278-479d-b972-fe5fb67e603c"
+							"value": "c2d5c7eb-e167-4221-8793-77a5d752c94c"
 						}
 					]
 				}
@@ -225,16 +251,61 @@
 				"followRedirects": true
 			},
 			"request": {
+				"auth": {
+					"type": "oauth2",
+					"oauth2": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						}
+					]
+				},
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{url}}/user/logout",
+					"raw": "{{url}}/user/login",
 					"host": [
 						"{{url}}"
 					],
 					"path": [
 						"user",
-						"logout"
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Order",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/order/ ",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"order",
+						" "
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Order",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/order",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"order"
 					]
 				}
 			},

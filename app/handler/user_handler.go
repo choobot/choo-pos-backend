@@ -86,7 +86,7 @@ func (this *MySqlUserHandler) GetAllLog() ([]model.UserLog, error) {
 	if err := this.CreateTablesIfNotExist(); err != nil {
 		return nil, err
 	}
-	var userLogs []model.UserLog
+	userLogs := []model.UserLog{}
 	rows, err := this.db.Query("SELECT created_at, user_id, name, picture FROM user_log ORDER BY created_at DESC")
 	defer rows.Close()
 	if err != nil {

@@ -44,6 +44,9 @@
 ## Tech Stack
 - Go
 - Echo
+- gorilla/sessions
+- go-playground/validator
+- stretchr/testify
 - GoMock
 - RESTful API
 - OAuth 2.0

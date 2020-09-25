@@ -5,26 +5,32 @@ import (
 
 	"github.com/choobot/choo-pos-backend/app/controller"
 	"github.com/choobot/choo-pos-backend/app/handler"
+	"github.com/choobot/choo-pos-backend/app/validate"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/middleware"
+	validator "gopkg.in/go-playground/validator.v10"
 )
 
 func main() {
 	oAuthSerivce := handler.NewLineOAuthHandler()
 	productHandler := handler.NewMySqlProductHandler()
 	userHandler := handler.NewMySqlUserHandler()
+	orderHandler := handler.NewMySqlOrderHandler()
 	controller := controller.ApiController{
 		OAuthHandler:     &oAuthSerivce,
 		SessionHandler:   &handler.CookieSessionHandler{},
 		ProductHandler:   &productHandler,
 		UserHandler:      &userHandler,
 		PromotionHandler: &handler.FixPromotionHandler{},
+		OrderHandler:     &orderHandler,
 	}
 
 	e := echo.New()
+	e.Validator = &validate.CustomValidator{Validator: validator.New()}
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("choo-pos"))))
@@ -38,12 +44,11 @@ func main() {
 
 	e.GET("/product", controller.GetAllProduct)
 	e.POST("/product", controller.CreateProduct)
-	// e.GET("/product/:id", controller.GetCustomer)
-	// e.PUT("/product/:id", controller.UpdateProduct)
-	// e.DELETE("/product/:id", controller.DeleteProduct)
 
 	e.PUT("/cart", controller.UpdateCart)
-	// e.GET("/checkout", controller.Logout)
+
+	e.POST("/order", controller.CreateOrder)
+	e.GET("/order/:id", controller.GetOrder)
 
 	e.GET("/user/log", controller.GetAllUserLog)
 

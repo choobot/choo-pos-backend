@@ -20,6 +20,7 @@ type ApiController struct {
 	ProductHandler   handler.ProductHandler
 	UserHandler      handler.UserHandler
 	PromotionHandler handler.PromotionHandler
+	OrderHandler     handler.OrderHandler
 }
 
 type ApiError struct {
@@ -239,6 +240,44 @@ func (this *ApiController) GetAllUserLog(c echo.Context) error {
 	})
 }
 
+func (this *ApiController) BuildOrder(order *model.Order) (*model.Order, error) {
+	if len(order.Items) > 0 {
+		// Load Product detail
+		var ids []interface{}
+		for _, item := range order.Items {
+			ids = append(ids, item.Product.Id)
+		}
+
+		productsMap, e := this.ProductHandler.GetByIds(ids)
+		if e != nil {
+			return nil, e
+		}
+
+		for i, item := range order.Items {
+			order.Items[i].Product = productsMap[item.Product.Id]
+			order.Items[i].Price = order.Items[i].Product.Price
+		}
+
+		// Calculate Discount
+		order, e = this.PromotionHandler.CalculateDiscount(order, productsMap)
+		if e != nil {
+			return nil, e
+		}
+	}
+
+	// Sum Total
+	total := 0.0
+	subtotal := 0.0
+	for _, item := range order.Items {
+		total += item.Price
+		subtotal += item.Product.Price
+	}
+	order.Subtotal = subtotal
+	order.Total = total
+
+	return order, nil
+}
+
 func (this *ApiController) UpdateCart(c echo.Context) error {
 	this.SetNoCache(c)
 	if _, err := this.VerifyAccessToken(c); err != nil {
@@ -256,51 +295,99 @@ func (this *ApiController) UpdateCart(c echo.Context) error {
 		return c.JSON(err.Error.Code, err)
 	}
 
-	if len(order.Items) > 0 {
-		// Load Product detail
-		var ids []interface{}
-		for _, item := range order.Items {
-			ids = append(ids, item.Product.Id)
-		}
+	// TODO
+	// if e := c.Validate(order); e != nil {
+	// 	err := ApiError{
+	// 		Error: Error{
+	// 			Code:  http.StatusBadRequest,
+	// 			Error: e.Error(),
+	// 		},
+	// 	}
+	// 	return c.JSON(err.Error.Code, err)
+	// }
 
-		productsMap, e := this.ProductHandler.GetByIds(ids)
-		if e != nil {
-			err := ApiError{
-				Error: Error{
-					Code:  http.StatusInternalServerError,
-					Error: e.Error(),
-				},
-			}
-			return c.JSON(err.Error.Code, err)
+	order, e := this.BuildOrder(order)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
 		}
-
-		for i, item := range order.Items {
-			order.Items[i].Product = productsMap[item.Product.Id]
-			order.Items[i].Price = order.Items[i].Product.Price
-		}
-
-		// Calculate Discount
-		order, e = this.PromotionHandler.CalculateDiscount(order, productsMap)
-		if e != nil {
-			err := ApiError{
-				Error: Error{
-					Code:  http.StatusInternalServerError,
-					Error: e.Error(),
-				},
-			}
-			return c.JSON(err.Error.Code, err)
-		}
+		return c.JSON(err.Error.Code, err)
 	}
 
-	// Sum Total
-	total := 0.0
-	subtotal := 0.0
-	for _, item := range order.Items {
-		total += item.Price
-		subtotal += item.Product.Price
+	return c.JSONPretty(http.StatusOK, order, "  ")
+}
+
+func (this *ApiController) CreateOrder(c echo.Context) error {
+	this.SetNoCache(c)
+	if _, err := this.VerifyAccessToken(c); err != nil {
+		return c.JSON(err.Error.Code, err)
 	}
-	order.Subtotal = subtotal
-	order.Total = total
+
+	order := &model.Order{}
+	if e := c.Bind(order); e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusBadRequest,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	order, e := this.BuildOrder(order)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	order, e = this.OrderHandler.Create(*order)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+
+	return c.JSONPretty(http.StatusOK, order, "  ")
+}
+
+func (this *ApiController) GetOrder(c echo.Context) error {
+	this.SetNoCache(c)
+	if _, err := this.VerifyAccessToken(c); err != nil {
+		return c.JSON(err.Error.Code, err)
+	}
+
+	id := c.Param("id")
+	order, e := this.OrderHandler.GetById(id)
+	if e != nil {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusInternalServerError,
+				Error: e.Error(),
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
+	if order.Id == "" {
+		err := ApiError{
+			Error: Error{
+				Code:  http.StatusNotFound,
+				Error: "Order not found",
+			},
+		}
+		return c.JSON(err.Error.Code, err)
+	}
 
 	return c.JSONPretty(http.StatusOK, order, "  ")
 }

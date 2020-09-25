@@ -77,7 +77,6 @@ func (this *MySqlProductHandler) CreateTablesIfNotExist() error {
 				return err
 			}
 		}
-
 	}
 
 	return nil
@@ -110,8 +109,8 @@ func (this *MySqlProductHandler) GetAll() ([]model.Product, error) {
 	if err := this.CreateTablesIfNotExist(); err != nil {
 		return nil, err
 	}
-	var products []model.Product
-	rows, err := this.db.Query("SELECT id, title, price, cover, status, CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), CONVERT_TZ(updated_at,'GMT','Asia/Bangkok') FROM product ORDER BY title")
+	products := []model.Product{}
+	rows, err := this.db.Query("SELECT id, title, price, cover, status, created_at, updated_at FROM product ORDER BY title")
 	defer rows.Close()
 	if err != nil {
 		return nil, err
@@ -152,7 +151,7 @@ func (this *MySqlProductHandler) GetByIds(ids []interface{}) (map[string]model.P
 		return nil, err
 	}
 	productsMap := map[string]model.Product{}
-	sql := "SELECT id, title, price, cover, status, CONVERT_TZ(created_at,'GMT','Asia/Bangkok'), CONVERT_TZ(updated_at,'GMT','Asia/Bangkok') FROM product WHERE id IN (?" + strings.Repeat(",?", len(ids)-1) + ")"
+	sql := "SELECT id, title, price, cover, status, created_at, updated_at FROM product WHERE id IN (?" + strings.Repeat(",?", len(ids)-1) + ")"
 
 	rows, err := this.db.Query(sql, ids...)
 	defer rows.Close()

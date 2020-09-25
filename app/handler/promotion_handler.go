@@ -80,29 +80,6 @@ func (this *FixPromotionHandler) AddPromotionDetailToProduct(products []model.Pr
 				products[i].Promotion = promotion.Name
 			}
 		}
-		// if promotion.Type == "tier_unique_num" {
-		// 	num := 0
-		// 	discountedProductsMap := map[string]model.Product{}
-		// 	for _, productId := range promotion.ProductIds {
-		// 		if _, ok := productsMap[productId]; ok {
-		// 			num++
-		// 			discountedProductsMap[productId] = productsMap[productId]
-		// 		}
-		// 	}
-		// 	if num > len(promotion.Tiers) {
-		// 		num = len(promotion.Tiers)
-		// 	}
-		// 	if num > 0 {
-		// 		discountPercent := promotion.Tiers[num-1]
-		// 		// Update item price in Cart
-		// 		for i, item := range order.Items {
-		// 			if _, ok := discountedProductsMap[item.Product.Id]; ok {
-		// 				order.Items[i].Price = (1 - discountPercent) * discountedProductsMap[item.Product.Id].Price
-		// 				delete(discountedProductsMap, item.Product.Id)
-		// 			}
-		// 		}
-		// 	}
-		// }
 	}
 
 	return products, nil

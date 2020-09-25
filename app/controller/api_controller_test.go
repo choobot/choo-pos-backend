@@ -10,10 +10,12 @@ import (
 
 	"github.com/choobot/choo-pos-backend/app/handler"
 	"github.com/choobot/choo-pos-backend/app/model"
-	"github.com/golang/mock/gomock"
+	"github.com/choobot/choo-pos-backend/app/validate"
 
+	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
+	validator "gopkg.in/go-playground/validator.v10"
 )
 
 func createGoodTokenRequest() (echo.Context, *httptest.ResponseRecorder) {
@@ -343,6 +345,7 @@ func TestApiController_UpdateCart(t *testing.T) {
 		]
 	}`
 	e := echo.New()
+	e.Validator = &validate.CustomValidator{Validator: validator.New()}
 	req := httptest.NewRequest(http.MethodGet, "/", strings.NewReader(jsonMsg))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	req.Header.Set("Authorization", "Bearer token_value")

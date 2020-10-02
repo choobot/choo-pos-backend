@@ -1,7 +1,7 @@
 # choo-pos-backend
 
 ## Note
-- Frontend Repo: https://github.com/choobot/choo-pos-backend
+- Frontend Repo: https://github.com/choobot/choo-pos-frontend
 - Backend Repo: https://github.com/choobot/choo-pos-backend
 - API Doc: https://choo-pos-backend.herokuapp.com
 

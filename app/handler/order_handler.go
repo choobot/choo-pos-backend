@@ -193,7 +193,8 @@ func (this *MySqlOrderHandler) GetAll() ([]model.Order, error) {
 		return nil, err
 	}
 
-	currentOrder := model.Order{}
+	currentOrderId := ""
+	orderIndex := -1
 	for rows.Next() {
 		var orderId string
 		var total float64
@@ -217,19 +218,20 @@ func (this *MySqlOrderHandler) GetAll() ([]model.Order, error) {
 				Price: productPrice,
 			},
 		}
-		currentOrder.Items = append(currentOrder.Items, item)
-		if currentOrder.Id != orderId {
+		if orderId != currentOrderId {
 			order := model.Order{
 				Id:        orderId,
 				Total:     total,
 				Subtotal:  subtotal,
 				Cash:      cash,
 				CreatedAt: createdAt,
-				Items:     currentOrder.Items,
+				Items:     []model.OrderItem{},
 			}
-			currentOrder = order
-			orders = append(orders, currentOrder)
+			currentOrderId = orderId
+			orderIndex++
+			orders = append(orders, order)
 		}
+		orders[orderIndex].Items = append(orders[orderIndex].Items, item)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
